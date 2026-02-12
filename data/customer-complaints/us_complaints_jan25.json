@@ -1,0 +1,30 @@
+[
+  {
+    "complaint_id": "US-20260125-001",
+    "region": "US",
+    "product": "101 Pineapple Cake",
+    "customer_name": "Michael Chen",
+    "channel": "Email",
+    "date": "2026-01-25",
+    "severity": "high",
+    "category": "out-of-stock",
+    "description": "Tried to order 20 boxes for Lunar New Year celebration at Arcadia store. Told they only have 3 boxes left and cannot fulfill the order.",
+    "store": "Arcadia Branch",
+    "status": "open",
+    "resolution": null
+  },
+  {
+    "complaint_id": "US-20260126-002",
+    "region": "US",
+    "product": "101 Pineapple Cake",
+    "customer_name": "Emily Wang",
+    "channel": "Phone",
+    "date": "2026-01-26",
+    "severity": "medium",
+    "category": "out-of-stock",
+    "description": "Online order placed 3 days ago still not shipped. Website shows in-stock but customer service says out of stock.",
+    "store": "Online Store",
+    "status": "open",
+    "resolution": null
+  }
+]

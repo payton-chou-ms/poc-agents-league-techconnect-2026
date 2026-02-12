@@ -1,0 +1,44 @@
+[
+  {
+    "complaint_id": "JP-20260125-001",
+    "region": "JP",
+    "product": "101 パイナップルケーキ",
+    "customer_name": "田中様",
+    "channel": "メール",
+    "date": "2026-01-25",
+    "severity": "high",
+    "category": "在庫切れ",
+    "description": "東京銀座店で購入しようとしたが、在庫がないと言われた。台湾土産として10箱予約したい。",
+    "store": "東京銀座店",
+    "status": "open",
+    "resolution": null
+  },
+  {
+    "complaint_id": "JP-20260126-002",
+    "region": "JP",
+    "product": "101 パイナップルケーキ",
+    "customer_name": "鈴木様",
+    "channel": "電話",
+    "date": "2026-01-26",
+    "severity": "medium",
+    "category": "在庫切れ",
+    "description": "大阪店にも在庫がない。オンラインショップも品切れ表示。いつ入荷するか知りたい。",
+    "store": "大阪心斎橋店",
+    "status": "open",
+    "resolution": null
+  },
+  {
+    "complaint_id": "JP-20260127-003",
+    "region": "JP",
+    "product": "101 パイナップルケーキ",
+    "customer_name": "佐藤様",
+    "channel": "LINE",
+    "date": "2026-01-27",
+    "severity": "high",
+    "category": "在庫切れ",
+    "description": "会社のお年始ギフトとして30箱必要。代替品の提案を求む。",
+    "store": "法人注文",
+    "status": "open",
+    "resolution": null
+  }
+]

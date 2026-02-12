@@ -1,0 +1,193 @@
+````skill
+---
+name: incident-report-generator
+description: 'Use GitHub Copilot to compile event details and automatically generate an incident report draft'
+---
+
+# Demo 7: Incident Report Generation
+
+This skill simulates using GitHub Copilot to automatically compile event information and generate a report draft.
+
+## Triggers
+
+Triggered when the user asks questions such as:
+- Generate a report
+- Incident report
+- Compile event details
+- Summarize information
+
+## Default Response
+
+When a report generation request is detected, return the following result:
+
+---
+
+### 📝 Incident Report Draft
+
+> Source: GitHub Copilot (Built-in capability)
+> Report Type: Incident Report
+
+---
+
+# 🔴 Incident Report: 101 Pineapple Cake Cross-Regional Customer Complaint
+
+## Report Information
+
+| Field | Content |
+|-------|---------|
+| Incident ID | INC-2026-0131-001 |
+| Severity | P2 (High) |
+| Report Date | 2026-01-31 |
+| Reporter | Harry (IT Operations) |
+| Reviewer | Almond (Product Manager) |
+
+---
+
+## 📋 Executive Summary
+
+### Problem Description
+Starting January 25, 2026, customer complaints were received from Taiwan, Japan, and the US regarding inability to purchase "101 Pineapple Cake." Investigation revealed the issue involves both **system sync delay** and **logistics disruption**.
+
+### Scope of Impact
+- 🇹🇼 Taiwan: Website display anomaly (false out-of-stock)
+- 🇯🇵 Japan: Website display anomaly (false out-of-stock)
+- 🇺🇸 USA: Actual inventory shortage + blizzard logistics delay
+
+### Impact Timeline
+- Start Time: 2026-01-25 08:00 UTC+8
+- Discovery Time: 2026-01-31 09:00 UTC+8
+- Resolution Time: 2026-01-31 11:00 UTC+8
+- Total Impact Duration: ~6 days
+
+---
+
+## 🔍 Root Cause Analysis (RCA)
+
+### Cause 1: Supplier Data Sync Delay (System Issue)
+
+```
+Problem: API connection timeout set too short (5 seconds)
+         Caused supplier data sync failures
+         Website displayed "Out of Stock" (false out-of-stock)
+
+Affected Regions: Taiwan, Japan
+```
+
+### Cause 2: Blizzard Causing Logistics Delay (External Factor)
+
+```
+Problem: US East Coast blizzard (Winter Storm Juno)
+         Caused full logistics delay
+         Restocking could not arrive on time
+
+Affected Region: USA
+```
+
+---
+
+## 🛠️ Remediation Actions
+
+### Immediate Actions
+
+| Time | Action | Owner | Status |
+|------|--------|-------|--------|
+| 10:30 | Used Foundry Agent + Fabric MCP to verify regional inventory | Harry | ✅ Done |
+| 10:35 | Queried SharePoint knowledge base for solutions | Harry | ✅ Done |
+| 10:40 | GitHub Coding Agent fixed sync bug | Harry | ✅ Done |
+| 10:45 | Queried Bing to confirm US blizzard situation | Harry | ✅ Done |
+| 10:50 | Confirmed US restocking logistics status | Harry | ✅ Done |
+| 10:55 | Verified system fix effectiveness | Harry | ✅ Done |
+
+### Technical Fix Details
+
+```diff
+Fix Target: supplier-sync-service
+
+- API timeout: 5s → 30s
+- Added: 3-retry mechanism (exponential backoff)
+- Added: Comprehensive error handling
+- Added: Cache update timestamp validation
+```
+
+---
+
+## 📊 Fix Effectiveness
+
+| Metric | Before Fix | After Fix | Improvement |
+|--------|-----------|-----------|-------------|
+| Sync Success Rate | 87.3% | 99.8% | +12.5% |
+| Avg Sync Time | 45s | 12s | -73% |
+| API Timeout Errors | 23/hour | 0/hour | -100% |
+| False Out-of-Stock Events | 15/day | 0/day | -100% |
+
+---
+
+## 📅 Follow-Up Action Plan
+
+| Item | Owner | Target Date | Status |
+|------|-------|-------------|--------|
+| Set up sync service monitoring alerts | IT Operations | 2026-02-05 | 🔄 In Progress |
+| Update SOP documentation | IT Operations | 2026-02-03 | 📝 Pending |
+| Customer communication & apology | Customer Service | 2026-02-01 | 📝 Pending |
+| Post-mortem meeting | All Teams | 2026-02-02 | 📅 Scheduled |
+| Stress testing | QA Team | 2026-02-07 | 📝 Pending |
+
+---
+
+## 🎓 Lessons Learned
+
+### What Went Well ✅
+1. AI Agent enabled rapid problem diagnosis
+2. Cross-system integrated queries were highly efficient
+3. Automated bug fix saved significant time
+4. Immediate post-fix verification of effectiveness
+
+### Areas for Improvement ⚠️
+1. Sync service lacked proper monitoring alerts
+2. Problem discovery took too long (6 days)
+3. External logistics risks not included in early warning system
+
+### Improvement Recommendations 💡
+1. Set up automatic alerts when sync success rate drops below 95%
+2. Implement AIOps anomaly detection
+3. Integrate weather/logistics APIs for risk early warning
+
+---
+
+## 📎 Attachments
+
+1. [Fix PR #1892](https://github.com/pineapple-cake-shop/supplier-sync-service/pull/1892)
+2. [System Monitoring Screenshot](./attachments/azure-dashboard.png)
+3. [Customer Complaint Summary](./attachments/complaint-summary.xlsx)
+
+---
+
+## ✅ Approval
+
+| Role | Name | Status |
+|------|------|--------|
+| Reporter | Harry | ✅ Approved |
+| Product Manager | Almond | ⏳ Pending |
+| IT Manager | - | ⏳ Pending |
+
+---
+
+*This report was auto-generated by GitHub Copilot. Please review and confirm content accuracy.*
+
+---
+
+## Tools Used
+
+- `GitHub Copilot` - Automated information compilation and report generation
+- Context Source: Execution results from Demo 1-6
+
+## Data Sources
+
+- Fabric inventory query results
+- SharePoint knowledge base
+- GitHub PR information
+- Bing news search
+- Logistics tracking system
+- Azure Monitor data
+
+````

@@ -1,0 +1,3 @@
+product_id,product_name,region,warehouse,quantity,unit,status,last_updated,reorder_point,supplier
+P101-JP,101 パイナップルケーキ,JP,東京中央倉庫,580,盒,normal,2026-01-31T08:00:00Z,200,日本代理 - 佐川物流
+P101-JP-OS,101 パイナップルケーキ,JP,大阪配送センター,120,盒,low,2026-01-31T08:00:00Z,100,日本代理 - 佐川物流

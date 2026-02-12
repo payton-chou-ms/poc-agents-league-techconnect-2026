@@ -1,0 +1,4 @@
+product_id,product_name,region,warehouse,quantity,unit,status,last_updated,reorder_point,supplier
+P101-TW,101 造型鳳梨酥,TW,台北中央倉庫,2100,盒,normal,2026-01-31T08:00:00Z,500,佳德鳳梨酥供應商
+P101-TW-KH,101 造型鳳梨酥,TW,高雄南區倉庫,850,盒,normal,2026-01-31T08:00:00Z,200,佳德鳳梨酥供應商
+P101-TW-TC,101 造型鳳梨酥,TW,台中門市倉,320,盒,low,2026-01-31T08:00:00Z,100,佳德鳳梨酥供應商

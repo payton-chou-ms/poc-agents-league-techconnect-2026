@@ -1,0 +1,58 @@
+[
+  {
+    "complaint_id": "TW-20260125-001",
+    "region": "TW",
+    "product": "101 造型鳳梨酥",
+    "customer_name": "林小姐",
+    "channel": "LINE 官方帳號",
+    "date": "2026-01-25",
+    "severity": "high",
+    "category": "缺貨",
+    "description": "門市人員告知已缺貨一週，預購也無法下單。客戶反映已連續三天到不同門市都買不到。",
+    "store": "台北 101 旗艦店",
+    "status": "open",
+    "resolution": null
+  },
+  {
+    "complaint_id": "TW-20260125-002",
+    "region": "TW",
+    "product": "101 造型鳳梨酥",
+    "customer_name": "張先生",
+    "channel": "客服電話",
+    "date": "2026-01-25",
+    "severity": "medium",
+    "category": "缺貨",
+    "description": "訂購 50 盒作為公司春節禮盒，被告知無法出貨。已付訂金。",
+    "store": "企業大量訂購",
+    "status": "open",
+    "resolution": null
+  },
+  {
+    "complaint_id": "TW-20260126-003",
+    "region": "TW",
+    "product": "101 造型鳳梨酥",
+    "customer_name": "陳小姐",
+    "channel": "官方網站",
+    "date": "2026-01-26",
+    "severity": "high",
+    "category": "缺貨",
+    "description": "日本朋友託買，結果網站顯示缺貨，門市也買不到。質疑是否停產。",
+    "store": "線上商城",
+    "status": "open",
+    "resolution": null
+  },
+  {
+    "complaint_id": "TW-20260127-004",
+    "region": "TW",
+    "product": "101 造型鳳梨酥",
+    "customer_name": "王先生",
+    "channel": "Facebook",
+    "date": "2026-01-27",
+    "severity": "low",
+    "category": "資訊查詢",
+    "description": "想了解何時會補貨，願意等待。",
+    "store": "信義門市",
+    "status": "open",
+    "resolution": null
+  }
+]
