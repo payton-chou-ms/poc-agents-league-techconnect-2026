@@ -2,138 +2,167 @@
 
 > **Agents League TechConnect — Battle #1: Creative Apps with GitHub Copilot**
 
-Zava 是一款基於 **GitHub Copilot SDK** 打造的企業級事件回應 AI 助理。透過整合多種工具與資料來源，展示 AI Agent 如何即時處理跨國產品缺貨事件的完整流程。系統包含 **5 類 7 個專業 Agent**、**3 個可切換的自訂 Agent**，以及 **8 個 MCP 連接器**（含 2 個即時連線 + 6 個靜態降級）。
+Zava 是一款基於 **GitHub Copilot SDK** 打造的企業級事件回應 AI 助理。透過 Copilot SDK 的 **Agent Skills** 機制，將 Markdown 定義的技能檔案轉換為 SDK `Tool` 物件，整合 **5 類 7 個專業 Agent**、**3 個可切換自訂 Agent**、以及 **9 個 MCP 連接器**，展示 AI Agent 如何即時處理跨國產品缺貨事件的完整流程。
+
+---
+
+## ⚠️ 即時功能 vs 模擬展示 標示
+
+> **本專案為 Demo/POC 應用程式。** 下表明確標示哪些元件為完整功能（即時），哪些使用預先撰寫的靜態回應（模擬），以確保離線 Demo 的穩定性。
+
+| 元件 | 狀態 | 說明 |
+|------|------|------|
+| **Copilot SDK 引擎** | ✅ 即時 | `CopilotClient` 工作階段、串流、工具呼叫 — 核心 AI 執行時 |
+| **Agent Skills → Tool 管線** | ✅ 即時 | `.github/skills/*/SKILL.md` → 解析 → `copilot.Tool` 物件註冊於 SDK |
+| **系統提示詞與治理** | ✅ 即時 | 權限升級、工具路由規則透過 `src/prompts.py` 實現 |
+| **GitHub MCP** | ✅ 即時 | 真實 HTTP MCP（`api.githubcopilot.com/mcp/`）註冊於 SDK 工作階段 |
+| **WorkIQ MCP** | ✅ 即時 | 真實 HTTP MCP（`workiq.microsoft.com/mcp/`）註冊於 SDK 工作階段 |
+| **庫存 CSV 資料（Demo 1）** | ✅ 即時 | `src/inventory_data.py` 讀取 `data/inventory/` 真實 CSV 檔案 |
+| **意圖路由器** | ✅ 即時 | `src/router.py` 關鍵字分類（獨立模組，console 流程由 LLM 處理路由） |
+| **Agent 註冊表與權限** | ✅ 即時 | `src/agents.py` 定義 7 個 Agent 及權限模型 |
+| **自動化測試** | ✅ 即時 | 181 項 pytest 測試，100% 通過 |
+| **Foundry Agent（Demo 1 ref）** | 🔶 參考 | `ref/01_inventory_agent_sample.py` — 獨立腳本，需 Azure AI Foundry 憑證，未整合至 console app |
+| **Fabric MCP** | 🔶 模擬 | 僅為 Agent 中繼資料標籤；Demo 1 工具回傳即時 CSV 資料，非真實 Fabric MCP |
+| **SharePoint MCP** | 🔶 模擬 | Agent 中繼資料標籤；Demo 2 回傳靜態 SKILL.md 回應 |
+| **Bing Search MCP** | 🔶 模擬 | Agent 中繼資料標籤；Demo 4 回傳靜態 SKILL.md 回應 |
+| **Logistics MCP** | 🔶 模擬 | Agent 中繼資料標籤；Demo 5 回傳靜態 SKILL.md 回應 |
+| **Azure Monitor MCP** | 🔶 模擬 | Agent 中繼資料標籤；Demo 6 回傳靜態 SKILL.md 回應 |
+| **Playwright MCP** | 🔶 已設定 | 列於 `config/mcp_server.json` 但未註冊於 SDK 工作階段 |
+| **Filesystem MCP** | 🔶 已設定 | 列於 `config/mcp_server.json` 但未註冊於 SDK 工作階段 |
+| **自訂 Agent 切換** | 🔶 模擬 | `/agent N` 顯示 Agent 資訊但不會更換 SDK 工作階段提示詞 |
+| **Demo 2–7 技能回應** | 🔶 模擬 | 回傳 SKILL.md 檔案中預先撰寫的 Markdown |
+| **權限升級** | 🔶 提示詞驅動 | 完全透過系統提示詞指令實現，非程式碼層面檢查 |
+
+---
 
 ## 🎯 情境說明
 
 **Zava「101 造型鳳梨酥」** — 招牌商品在台灣、日本、美國三地出現缺貨問題。Zava 引導使用者走過完整事件處理流程：診斷根因、協調修復、追蹤物流、產生報告 — 全程以自然對話完成。
 
+---
+
 ## ✨ Demo 階段與技術總覽
 
-| 階段 | Demo | Agent / Tool | MCP | 資料來源 |
-|------|------|--------------|-----|----------|
-| **階段一：確認問題** | Demo 1 — 庫存查詢 ✅ | Foundry Agent (已實作) | Fabric MCP | Fabric Lakehouse (庫存表) |
-| | Demo 2 — 知識庫搜尋 | Foundry Agent | SharePoint MCP | SharePoint KM 文件 |
-| **階段二：修改問題** | Demo 3 — Bug 修復 | GitHub Coding Agent | — | GitHub Repo (Bug 程式碼) |
-| **階段三：確認成效** | Demo 4 — 天氣與新聞 | Foundry Agent | Bing Search MCP | Bing 搜尋結果 |
-| | Demo 5 — 物流追蹤 | Foundry Agent | Logistics MCP | 物流追蹤 DB |
-| | Demo 6 — 系統健康度 | Foundry Agent | Azure Monitor MCP | Azure Logs / Metrics |
-| **階段四：報告追蹤** | Demo 7 — 事件報告 | GitHub Copilot | — | 事件上下文 |
-| | Demo 8 — 會議預約 | GitHub Copilot | WorkIQ MCP | M365 Calendar |
+| 階段 | Demo | Agent / Tool | MCP | 資料來源 | 狀態 |
+|------|------|--------------|-----|----------|------|
+| **階段一：確認問題** | Demo 1 — 庫存查詢 | Inventory Agent | Fabric MCP | ✅ 即時 CSV（`data/inventory/`） | ✅ 即時資料 |
+| | Demo 2 — 知識庫搜尋 | Knowledge Agent | SharePoint MCP | SharePoint KM 文件 | 🔶 靜態 |
+| **階段二：修改問題** | Demo 3 — Bug 修復 | GitHub Coding Agent | — | GitHub Repo | 🔶 靜態 |
+| **階段三：確認成效** | Demo 4 — 天氣與新聞 | Search Agent | Bing Search MCP | Bing 搜尋結果 | 🔶 靜態 |
+| | Demo 5 — 物流追蹤 | Logistics Agent | Logistics MCP | 物流追蹤 DB | 🔶 靜態 |
+| | Demo 6 — 系統健康度 | SRE Agent | Azure Monitor MCP | Azure Logs/Metrics | 🔶 靜態 |
+| **階段四：報告追蹤** | Demo 7 — 事件報告 | GitHub Copilot | — | 事件上下文 | 🔶 靜態 |
+| | Demo 8 — 會議預約 | GitHub Copilot | WorkIQ MCP | M365 Calendar | ✅ 即時 MCP |
+
+> **✅ 即時** = 執行時取得真實資料或真實 MCP 呼叫 | **🔶 靜態** = SKILL.md 預先撰寫的回應
 
 ### Human-in-the-Loop 治理機制
 
-Zava 實作了**權限升級**流程：
+Zava 實作了**權限升級**流程，完全透過系統提示詞實現：
 
 - 初始僅具備「區域檢視」權限
 - 查詢跨區域資料前須取得主管核准
-- 展示企業級 AI Agent 治理模式
+- 展示企業級 AI Agent 治理模式（非程式碼層面強制）
+
+---
 
 ## 🏗️ 系統架構
 
+### 實際運作原理（程式碼層級）
+
+```
+使用者輸入（console_app.py）
+    → CopilotClient.send_and_wait(prompt)
+    → GPT-4.1（透過 Copilot SDK）分析意圖
+    → LLM 選擇要呼叫的 Tool（從 7 個已註冊工具中）
+    → Tool handler 執行：
+        ├── Demo 1: generate_inventory_report() → 真實 CSV 資料
+        ├── Demo 8: 重導至 WorkIQ MCP → 真實 MCP 呼叫
+        └── Demo 2-7: 回傳 SKILL.md 靜態回應
+    → LLM 以自然語言摘要結果
+    → 回應逐字串流至 Console
+```
+
 ### 架構層級
 
-| 層級 | 組件 | 說明 |
-|------|------|------|
-| **介面層** | Console App | Console 命令列 (`console_app.py`) |
-| **Orchestration 層** | Foundry Agent | 統一路由入口，根據意圖分派給專業 Agent |
-| **專業 Agent 層** | 5 類 7 個專業 Agent + 3 個自訂 Agent | 依權限分類，各司其職；另有 3 個可切換的自訂 Agent |
-| **MCP 層** | 8 個 MCP 連接器 | 2 個即時連線（GitHub、WorkIQ）+ 6 個靜態降級 + Playwright、Filesystem |
-| **資料層** | 7+ 種資料來源 | 企業內外部資料 |
+| 層級 | 組件 | 實作方式 |
+|------|------|----------|
+| **介面層** | Console App | `console_app.py` — 非同步 CLI，含 `/skills`、`/mcp`、`/agent` 指令 |
+| **AI 引擎** | GitHub Copilot SDK | `CopilotClient` → 工具 + MCP 伺服器 + 串流工作階段 |
+| **工具管線** | Agent Skills | `.github/skills/` → `src/skills.py` → `src/tools.py` → `copilot.Tool` |
+| **Agent 模型** | 7 Agent + 3 自訂 | `src/agents.py` — 含權限等級的註冊表（路由上下文中繼資料） |
+| **MCP（即時）** | 2 個 HTTP MCP | GitHub MCP + WorkIQ MCP 註冊於 SDK 工作階段 |
+| **MCP（已設定）** | 2 個本地 MCP | Playwright + Filesystem 於 `config/mcp_server.json` |
+| **MCP（模擬）** | 5 個靜態標籤 | Fabric、SharePoint、Bing、Logistics、Azure Monitor — `src/agents.py` 中繼資料 |
+| **資料層** | CSV + Markdown | `data/inventory/*.csv`、`data/sharepoint-km/*.md`、`data/customer-complaints/*.json` |
 
 ```mermaid
 graph TB
     User([👤 使用者])
 
     subgraph "介面層"
-        CON[Console App<br/>console_app.py]
+        CON["Console App<br/>console_app.py"]
     end
 
-    subgraph "Orchestration 層"
-        FA[Foundry Agent<br/>意圖路由器]
+    subgraph "AI 引擎 (✅ 即時)"
+        SDK["GitHub Copilot SDK<br/>CopilotClient + GPT-4.1"]
     end
 
-    subgraph "專業 Agent 層"
-        subgraph "📊 Data Agents"
-            INV[Inventory Agent<br/>🔴 高權限]
-            LOG[Logistics Agent<br/>🔴 高權限]
-        end
-        subgraph "📚 Knowledge Agent"
-            KA[Knowledge Agent<br/>🟡 中權限]
-        end
-        subgraph "🌐 External Agent"
-            SA[Search Agent<br/>🟢 低權限]
-        end
-        subgraph "⚙️ Ops Agent"
-            SRE[SRE Agent<br/>🔴 高權限]
-        end
+    subgraph "Agent Skills → Tools (✅ 即時管線)"
+        SKILL["8 × SKILL.md 檔案<br/>.github/skills/"]
+        PARSE["技能解析器<br/>src/skills.py"]
+        TOOLS["7 × copilot.Tool 物件<br/>src/tools.py"]
     end
 
-    subgraph "🛠️ GitHub Agents"
-        GCA[GitHub Coding Agent<br/>🔴 高權限]
-        GCP[GitHub Copilot<br/>🟡 中權限]
+    subgraph "即時 MCP (✅ 真實)"
+        MG["GitHub MCP ✅<br/>api.githubcopilot.com"]
+        MW["WorkIQ MCP ✅<br/>workiq.microsoft.com"]
     end
 
-    subgraph "🧑‍💼 自訂 Agent（可切換）"
-        CA1[R&D Assistant]
-        CA2[Customer Support]
-        CA3[Finance Analyst]
+    subgraph "即時資料 (✅ 真實)"
+        CSV["庫存 CSV<br/>data/inventory/*.csv"]
+        INV_CODE["inventory_data.py<br/>CSV → Markdown 報表"]
     end
 
-    subgraph "MCP 層（即時連線）"
-        MG[GitHub MCP ✅]
-        MW[WorkIQ MCP ✅]
-        MP[Playwright MCP]
-        MF[Filesystem MCP]
+    subgraph "靜態回應 (🔶 模擬)"
+        S1["Demo 2: SharePoint 知識庫"]
+        S2["Demo 3: GitHub Bug 修復"]
+        S3["Demo 4: Bing 天氣搜尋"]
+        S4["Demo 5: 物流追蹤"]
+        S5["Demo 6: Azure 健康度"]
+        S6["Demo 7: 事件報告"]
     end
 
-    subgraph "MCP 層（靜態降級）"
-        M1[Fabric MCP]
-        M2[SharePoint MCP]
-        M3[Bing Search MCP]
-        M4[Logistics MCP]
-        M5[Azure Monitor MCP]
-    end
-
-    subgraph "資料層"
-        D1[(庫存 Lakehouse)]
-        D2[(SharePoint KM)]
-        D3[(Bing 搜尋)]
-        D4[(物流 DB)]
-        D5[(Azure Monitor)]
-        D6[(M365 行事曆)]
-        D7[(GitHub Repo)]
+    subgraph "Agent 註冊表 (中繼資料)"
+        AG["7 Agents × 3 權限等級<br/>src/agents.py"]
     end
 
     User --> CON
-    CON --> FA
-    FA --> INV & KA & SA & SRE & LOG
-    FA -.-> GCA & GCP
-    CON -.-> CA1 & CA2 & CA3
-    INV --> M1 --> D1
-    KA --> M2 --> D2
-    SA --> M3 --> D3
-    LOG --> M4 --> D4
-    SRE --> M5 --> D5
-    GCP --> MW --> D6
-    GCA --> MG --> D7
+    CON --> SDK
+    SKILL --> PARSE --> TOOLS
+    TOOLS --> SDK
+    SDK -->|"Demo 1"| INV_CODE --> CSV
+    SDK -->|"Demo 8"| MW
+    SDK -->|"GitHub 操作"| MG
+    SDK -->|"Demo 2-7"| S1 & S2 & S3 & S4 & S5 & S6
+    AG -.->|"上下文"| SDK
 ```
 
 ### 🔐 Agent 權限分類表
 
-| Agent 類別 | Agent 名稱 | 權限等級 | 可存取資源 | Demo |
-|------------|-----------|----------|-----------|------|
-| 📊 Data Agent | Inventory Agent ✅ | 🔴 高 | Fabric Lakehouse (庫存資料) | Demo 1 (已實作) |
-| | Logistics Agent | 🔴 高 | 物流系統 DB | Demo 5 |
-| 📚 Knowledge Agent | Knowledge Agent | 🟡 中 | SharePoint 內部文件 | Demo 2 |
-| 🌐 External Agent | Search Agent | 🟢 低 | Bing 公開搜尋 | Demo 4 |
-| ⚙️ Ops Agent | SRE Agent | 🔴 高 | Azure Monitor Logs/Metrics | Demo 6 |
-| 🛠️ GitHub Agent | Coding Agent | 🔴 高 | GitHub Repo (寫入) | Demo 3 |
-| 🛠️ GitHub Agent | Copilot | 🟡 中 | M365 Calendar | Demo 7-8 |
+| Agent 類別 | Agent 名稱 | 權限等級 | MCP 連接器 | Demo | 資料狀態 |
+|------------|-----------|----------|------------|------|----------|
+| 📊 Data | Inventory Agent | 🔴 高 | fabric-mcp 🔶 | Demo 1 | ✅ 即時 CSV |
+| 📊 Data | Logistics Agent | 🔴 高 | logistics-mcp 🔶 | Demo 5 | 🔶 靜態 |
+| 📚 Knowledge | Knowledge Agent | 🟡 中 | sharepoint-mcp 🔶 | Demo 2 | 🔶 靜態 |
+| 🌐 External | Search Agent | 🟢 低 | bing-search-mcp 🔶 | Demo 4 | 🔶 靜態 |
+| ⚙️ Ops | SRE Agent | 🔴 高 | azure-monitor-mcp 🔶 | Demo 6 | 🔶 靜態 |
+| 🛠️ GitHub | Coding Agent | 🔴 高 | — | Demo 3 | 🔶 靜態 |
+| 🛠️ GitHub | Copilot | 🟡 中 | workiq-mcp ✅ | Demo 7-8 | Demo 8 ✅ 即時 |
 
 ### 🧑‍💼 自訂 Agent（Console 可切換）
 
-Console App 額外提供 3 個可切換的自訂 Agent，透過 `/agent` 指令選擇：
+透過 `/agent` 指令可瀏覽 3 個自訂 Agent：
 
 | # | Agent 名稱 | 說明 |
 |---|-----------|------|
@@ -141,29 +170,57 @@ Console App 額外提供 3 個可切換的自訂 Agent，透過 `/agent` 指令�
 | 2 | **Customer Support** | 客戶問題處理、FAQ 查詢、工單追蹤 |
 | 3 | **Finance Analyst** | 財報分析、預算規劃、成本估算與 ROI 分析 |
 
-> 這些 Agent 各有獨立的系統提示詞，可用於展示「同一 Copilot SDK 基座、不同領域 Agent」的彈性。
+> 🔶 **注意**：目前 `/agent N` 僅顯示 Agent 資訊，不會切換 SDK 工作階段的系統提示詞。Agent 定義存放於 `config/agent.json`。
 
-**為什麼要依權限分類 Agent？**
+---
 
-1. **最小權限原則** — 每個 Agent 只擁有完成任務所需的最小權限
-2. **安全隔離** — External Agent 無法存取內部資料
-3. **審計追蹤** — 可追蹤哪個 Agent 存取了哪些資源
-4. **彈性擴展** — 新增資料來源時，只需建立對應權限的 Agent
+## 🔌 MCP 整合
 
-### Foundry Agent 路由邏輯
+### Session 層級 MCP（✅ 註冊於 Copilot SDK）
 
-```mermaid
-graph TD
-    A["使用者輸入"] --> B["Foundry Agent<br/>(意圖辨識)"]
-    B --> C["查詢庫存"]
-    B --> D["搜尋文件"]
-    B --> E["查天氣"]
-    B --> F["檢查系統"]
-    C --> G["Inventory Agent<br/>(高權限)"]
-    D --> H["Knowledge Agent<br/>(中權限)"]
-    E --> I["Search Agent<br/>(低權限)"]
-    F --> J["SRE Agent<br/>(高權限)"]
+這 2 個 MCP 伺服器在 `CopilotClient.create_session()` 中註冊，提供真實即時資料：
+
+| MCP | 類型 | 端點 | 用途 |
+|-----|------|------|------|
+| GitHub MCP ✅ | HTTP | `api.githubcopilot.com/mcp/` | GitHub Issue / PR / Repo 操作 |
+| WorkIQ MCP ✅ | HTTP | `workiq.microsoft.com/mcp/` | M365 行事曆查詢與會議排程 |
+
+### 已設定 MCP（列於 `config/mcp_server.json`）
+
+| MCP | 類型 | 狀態 |
+|-----|------|------|
+| Playwright MCP | 本地（`npx`） | 🔶 已列出但未註冊於 SDK 工作階段 |
+| Filesystem MCP | 本地（`npx`） | 🔶 已列出但未註冊於 SDK 工作階段 |
+
+### Agent 層級 MCP（🔶 中繼資料標籤）
+
+| MCP 標籤 | Agent | 資料來源 | 實際行為 |
+|----------|-------|---------|----------|
+| fabric-mcp | Inventory Agent | Fabric Lakehouse | 工具讀取本地 CSV 檔案，非真實 Fabric |
+| sharepoint-mcp | Knowledge Agent | SharePoint 文件庫 | 回傳 SKILL.md 靜態回應 |
+| bing-search-mcp | Search Agent | Bing 搜尋引擎 | 回傳 SKILL.md 靜態回應 |
+| logistics-mcp | Logistics Agent | 物流追蹤 DB | 回傳 SKILL.md 靜態回應 |
+| azure-monitor-mcp | SRE Agent | Azure Monitor | 回傳 SKILL.md 靜態回應 |
+
+### 即時 MCP 路由邏輯（`src/tools.py`）
+
+```python
+LIVE_MCP_SKILLS: dict[str, str] = {
+    "workiq-meeting-booking": "workiq",  # Demo 8 → 真實 WorkIQ MCP
+}
 ```
+
+- `LIVE_MCP_SKILLS` 中的技能於 `build_tools()` 時被**跳過** — LLM 直接呼叫真實 MCP 伺服器工具
+- 其餘技能轉為 `copilot.Tool` 物件，附帶靜態 handler
+- Demo 1（`fabric-inventory-query`）有特殊 handler，讀取即時 CSV 資料
+
+### 容錯降級設計
+
+- **即時 MCP** — 若 GitHub/WorkIQ MCP 伺服器不回應，Zava 如實告知使用者並建議重試
+- **靜態 MCP** — SKILL.md 工具回傳預先撰寫的回應，確保離線 Demo 可正常運作
+- `LIVE_MCP_SKILLS` 字典控制哪些技能走即時 MCP、哪些走靜態回應 — 易於擴展
+
+---
 
 ## 🚀 快速開始
 
@@ -171,47 +228,39 @@ graph TD
 
 - Python 3.11+
 - [GitHub Copilot](https://github.com/features/copilot) 訂閱
-- Node.js（用於 MCP 伺服器）
-- Azure 訂閱 + [AI Foundry 專案](https://ai.azure.com)（用於 Demo 1 Foundry Agent）
+- Node.js（用於 Playwright/Filesystem MCP 伺服器，如需啟用）
+- Azure 訂閱 + [AI Foundry 專案](https://ai.azure.com)（僅 `ref/` Foundry Agent 腳本需要）
 
 ### 安裝步驟
 
 ```bash
-# 複製專案
-git clone https://github.com/<your-org>/poc-ai-summit-2026.git
-cd poc-ai-summit-2026
+git clone https://github.com/<your-org>/poc-agents-league-techconnect-2026.git
+cd poc-agents-league-techconnect-2026
 
-# 建立虛擬環境
 python -m venv .venv
 source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate   # Windows
 
-# 安裝依賴
 pip install .
 ```
 
 ### 環境變數
 
-複製範本檔案並填入你的憑證：
-
 ```bash
 cp .env.example .env
 ```
 
-必要變數：
-
-| 變數名稱 | 說明 |
-|----------|------|
-| `GITHUB_TOKEN` | 用於 MCP 的 GitHub 個人存取權杖 |
-| `AZURE_EXISTING_AIPROJECT_ENDPOINT` | AI Foundry 專案端點（Demo 1 庫存 Agent 需要） |
-| `AGENT_MODEL` | 模型部署名稱（預設：`gpt-4.1`） |
+| 變數名稱 | 必要 | 說明 |
+|----------|------|------|
+| `GITHUB_TOKEN` | 是 | 用於 MCP 的 GitHub 個人存取權杖 |
+| `AZURE_EXISTING_AIPROJECT_ENDPOINT` | 僅 `ref/` | AI Foundry 專案端點 |
+| `AGENT_MODEL` | 否 | 模型部署名稱（預設：`gpt-4.1`） |
 
 ### 啟動應用
 
-**命令列介面（Console）：**
-
 ```bash
 python console_app.py
+# 或
+zava
 ```
 
 ### Console 指令
@@ -227,178 +276,170 @@ python console_app.py
 | `1-8` | 輸入數字直接選擇對應技能 |
 | `?` | 顯示技能選單 |
 
-## 🔌 MCP 整合
+### 執行測試
 
-本專案整合了 **8 個 MCP (Model Context Protocol) 連接器**，分為「即時連線」與「靜態降級」兩種模式：
+```bash
+pip install -e ".[test]"
+pytest tests/ -v --tb=short
+# 預期：181 passed in ~0.4s
+```
 
-### 即時連線 MCP（Session 層級註冊）
-
-以下 MCP 在 `console_app.py` 中以 `mcp_servers` 設定直接連線，提供真實即時資料：
-
-| MCP | 類型 | 端點 | 使用 Agent | 說明 |
-|-----|------|------|-----------|------|
-| GitHub MCP ✅ | HTTP | `api.githubcopilot.com/mcp/` | Coding Agent | GitHub Issue / PR / Repo 操作 |
-| WorkIQ MCP ✅ | HTTP | `workiq.microsoft.com/mcp/` | Copilot | M365 行事曆查詢與會議排程 |
-| Playwright MCP | Local | `npx @anthropic/playwright-mcp` | — | 瀏覽器自動化、截圖、網頁爬蟲 |
-| Filesystem MCP | Local | `npx @modelcontextprotocol/server-filesystem` | — | 本地檔案系統存取 |
-
-### 靜態降級 MCP（Agent 層級標註）
-
-以下 MCP 在 `src/agents.py` 中標註為 `mcp_connector`，透過 SKILL.md 提供預設回應。當對應的 MCP 伺服器上線後，可無縫切換至即時模式：
-
-| MCP | 使用 Agent | 資料來源 | 說明 |
-|-----|-----------|---------|------|
-| Fabric MCP | Inventory Agent | Fabric Lakehouse | 跨區域庫存查詢（台/日/美） |
-| SharePoint MCP | Knowledge Agent | SharePoint 文件庫 | 內部知識管理文件搜尋 |
-| Bing Search MCP | Search Agent | Bing 搜尋引擎 | 即時公開資訊（天氣、新聞） |
-| Logistics MCP | Logistics Agent | 物流追蹤 DB | 出貨狀態與預計到達時間 |
-| Azure Monitor MCP | SRE Agent | Azure Logs/Metrics | 系統健康狀態監控 |
-
-### 容錯降級設計
-
-- **即時 MCP** — 若伺服器不回應，系統會如實告知使用者 MCP 連線失敗，建議重試
-- **靜態 MCP** — 對應的 SKILL.md 工具自動回傳預先撰寫的回應，確保離線 Demo 可正常運作
-- 在 `src/tools.py` 中，`LIVE_MCP_SKILLS` 字典控制哪些技能走即時 MCP、哪些走靜態回應
-
-## 🤖 GitHub Copilot 使用紀錄
-
-本專案以兩種角色運用 **GitHub Copilot**：
-
-### 作為 AI 執行引擎
-
-- **GitHub Copilot SDK** 作為核心 AI 引擎，管理工作階段、工具呼叫與串流回應
-- 使用者透過 Console App 以自然語言與整個 Agent 生態系互動
-
-### 作為專業 Agent
-
-- **Demo 7** — GitHub Copilot 根據對話上下文產生事件報告
-- **Demo 8** — GitHub Copilot 整合 WorkIQ MCP 安排 M365 會議
-
-### 開發過程中的使用
-
-- **Copilot Chat** 用於設計 Agent 路由框架、除錯非同步串流模式、以及生成系統提示詞
-- **Copilot Agent Mode** 協助搭建 Foundry Agent 整合與 MCP client 設定
-- **行內建議** 加速編寫 YAML frontmatter 解析器與工具建構器
+---
 
 ## 📁 專案結構
 
 ```
-agents-league-techconnect-2026/
-├── console_app.py        # Console 命令列進入點（含 /skills、/mcp、/agent 指令）
-├── pyproject.toml        # Python 專案設定與依賴
-├── requirements.txt      # Pip 依賴清單（與 pyproject.toml 同步）
-├── .env.example          # 環境變數範本
+poc-agents-league-techconnect-2026/
+├── console_app.py          # ✅ 主進入點 — Copilot SDK 工作階段 + Console UI
+├── pyproject.toml           # Python 專案設定與依賴
+├── requirements.txt         # Pip 依賴清單（與 pyproject.toml 同步）
+├── .env.example             # 環境變數範本
 │
 ├── src/
 │   ├── __init__.py
-│   ├── agents.py         # Agent 定義與權限模型（7 個 Agent）
-│   ├── router.py         # Foundry Agent 意圖路由器
-│   ├── prompts.py        # 系統提示詞（英文）
-│   ├── skills.py         # SKILL.md 載入與解析
-│   └── tools.py          # Copilot SDK Tool 建構器 + MCP 路由
+│   ├── agents.py            # ✅ 7 個 Agent 定義 + 權限模型（中繼資料）
+│   ├── router.py            # ✅ 關鍵字意圖路由器（獨立模組）
+│   ├── prompts.py           # ✅ 系統提示詞含工具路由 + 治理規則
+│   ├── skills.py            # ✅ SKILL.md YAML frontmatter 解析器 + 載入器
+│   ├── tools.py             # ✅ Skills → copilot.Tool 物件 + MCP 路由
+│   ├── inventory_data.py    # ✅ 即時 CSV 讀取器 → Markdown 庫存報表
+│   └── exceptions.py        # 自訂例外類別
 │
-├── tests/                # 自動化測試套件（pytest）
-│   ├── conftest.py       # 共用 fixture 與設定
-│   ├── test_agents.py    # Agent 註冊與權限測試
-│   ├── test_router.py    # 意圖分類與路由測試
-│   ├── test_skills.py    # SKILL.md 解析器測試
-│   ├── test_tools.py     # Tool 建構器測試
-│   ├── test_mcp.py       # MCP 設定測試
-│   └── test_integration.py # 端對端管線測試
+├── .github/skills/          # ✅ 8 個技能定義（YAML + Markdown）
+│   ├── demo1-fabric-inventory/SKILL.md    # → ✅ 即時 CSV 資料
+│   ├── demo2-sharepoint-km/SKILL.md       # → 🔶 靜態回應
+│   ├── demo3-github-bugfix/SKILL.md       # → 🔶 靜態回應
+│   ├── demo4-bing-weather/SKILL.md        # → 🔶 靜態回應
+│   ├── demo5-logistics/SKILL.md           # → 🔶 靜態回應
+│   ├── demo6-azure-health/SKILL.md        # → 🔶 靜態回應
+│   ├── demo7-incident-report/SKILL.md     # → 🔶 靜態回應
+│   └── demo8-meeting-booking/SKILL.md     # → ✅ 即時 MCP（WorkIQ）
 │
-├── data/                 # Demo 資料來源
-│   ├── customer-complaints/       # 客訴資料
-│   │   ├── tw_complaints_jan25.json
-│   │   ├── jp_complaints_jan25.json
-│   │   └── us_complaints_jan25.json
-│   ├── inventory/                 # 庫存資料 (Fabric)
+├── config/
+│   ├── agent.json           # 3 個自訂 Agent 定義（R&D/Support/Finance）
+│   └── mcp_server.json      # 4 個 MCP 伺服器設定（GitHub/WorkIQ/Playwright/FS）
+│
+├── data/                    # Demo 資料來源
+│   ├── inventory/           # ✅ Demo 1 即時 CSV 資料
 │   │   ├── tw_supplier_inventory.csv
 │   │   ├── jp_supplier_inventory.csv
 │   │   └── us_supplier_inventory.csv
-│   └── sharepoint-km/             # 知識管理文件
-│       ├── common-issues-faq.md
-│       ├── supplier-sync-guide.md
-│       └── inventory-troubleshoot.md
+│   ├── customer-complaints/ # 客訴 JSON 記錄
+│   └── sharepoint-km/       # 知識管理 Markdown 文件
 │
-└── .github/
-    └── skills/           # 8 個技能定義（SKILL.md 檔案）
-        ├── demo1-fabric-inventory/
-        ├── demo2-sharepoint-km/
-        ├── demo3-github-bugfix/
-        ├── demo4-bing-weather/
-        ├── demo5-logistics/
-        ├── demo6-azure-health/
-        ├── demo7-incident-report/
-        └── demo8-meeting-booking/
+├── ref/                     # 🔶 參考/獨立腳本（未整合）
+│   ├── 00_env_check.py      # Azure 憑證 + 連線驗證
+│   ├── 01_inventory_agent_sample.py  # 透過 azure-ai-projects SDK 的 Foundry Agent
+│   └── agent_utils.py       # ref/ 腳本共用工具
+│
+├── tests/                   # ✅ 181 項自動化測試（pytest）
+│   ├── conftest.py          # 共用 fixtures
+│   ├── test_agents.py       # Agent 註冊與權限測試（29）
+│   ├── test_router.py       # 意圖分類與路由測試（50）
+│   ├── test_skills.py       # SKILL.md 解析器測試（18）
+│   ├── test_tools.py        # Tool 建構器測試（10）
+│   ├── test_mcp.py          # MCP 設定測試（12）
+│   ├── test_integration.py  # 端對端管線測試（18）
+│   └── test_foundry_agent.py # Foundry Agent 結構驗證（24）
+│
+└── copilot/generated/       # Copilot SDK 產生的程式碼（gitkeep）
 ```
 
-## 📋 運作原理
+---
 
-1. **使用者輸入** — 使用者透過 Console App (`console_app.py`) 發送指令
-2. **意圖辨識** — Foundry Agent 分析使用者意圖，決定分派給哪個專業 Agent
-3. **Agent 路由** — 路由器 (`src/router.py`) 根據意圖類別與權限等級分派至對應的 Agent
-4. **權限檢查** — Agent 系統 (`src/agents.py`) 驗證目標 Agent 是否有足夠權限執行請求的操作
-5. **MCP 呼叫** — 即時 MCP（GitHub、WorkIQ）直接連線取得資料；靜態 MCP 回傳 SKILL.md 預設回應
-6. **結果彙整** — Foundry Agent 彙整回應，以自然對話方式回覆使用者
+## 📋 運作原理 — 詳細流程
 
-> **備註**：Console App 另支援 `/agent` 指令切換至自訂 Agent（R&D / Customer Support / Finance），各有獨立系統提示詞。
-
-### 使用者輸入技能編號的完整流程（以輸入 `1` 為例）
+### 核心管線：Copilot SDK Agent Skills
 
 ```mermaid
 sequenceDiagram
-    actor User
+    actor User as 使用者
     participant Console as console_app.py
-    participant Skills as src/skills.py<br/>load_skills()
-    participant Agents as src/agents.py<br/>AGENT_REGISTRY
-    participant Copilot as CopilotClient<br/>(GitHub Copilot SDK)
-    participant MCP as MCP Server<br/>(e.g. fabric-mcp)
+    participant SDK as Copilot SDK<br/>(CopilotClient)
+    participant LLM as GPT-4.1
+    participant Tool as copilot.Tool<br/>(from SKILL.md)
+    participant MCP as 即時 MCP<br/>(GitHub/WorkIQ)
+    participant CSV as inventory_data.py<br/>(CSV 檔案)
 
-    Note over User,Console: 使用者輸入 "1" 並按下 Enter
-
-    Console->>Console: user_input.isdigit() → True, num=1
-    Console->>Console: get_skill_prompt_by_number(skills, 1)
-
-    Note over Console,Skills: skills 已在啟動時從<br/>.github/skills/demo1-fabric-inventory/SKILL.md 載入
-
-    Console->>Console: skill = skills[0]<br/>(fabric-inventory-query, demo_id=1)
-
-    Console->>Agents: 遍歷 AGENT_REGISTRY:<br/>尋找 1 in agent.demo_ids 的 Agent
-    Agents-->>Console: ✅ Inventory Agent<br/>(category=DATA, permission=HIGH, mcp=fabric-mcp)
-
-    Note over Console: 📋 Log 輸出至終端機:<br/>[SKILL] fabric-inventory-query<br/>[AGENT] Inventory Agent (data)<br/>[PERMISSION] 🔴 high<br/>[MCP] fabric-mcp
-
-    Console->>Console: prompt = skill.triggers[0]<br/>= "Check inventory"
-
-    Console->>Copilot: session.send_and_wait(<br/>{"prompt": "Check inventory"})
-
-    Note over Copilot: Copilot SDK 處理 prompt<br/>（含 system_message + tools）
-
-    Copilot->>Console: Event: TOOL_EXECUTION_START<br/>(tool_name 或 mcp_server)
-    Console->>Console: 顯示 "🛠️ [TOOL CALL] ..."
-
-    Copilot->>MCP: 呼叫 MCP tool
-    MCP-->>Copilot: 回傳工具結果
-
-    Copilot->>Console: Event: TOOL_EXECUTION_COMPLETE
-    Console->>Console: 顯示 "✅ [MCP DONE] ..."
-
-    loop 串流回應 tokens
-        Copilot->>Console: Event: ASSISTANT_MESSAGE_DELTA<br/>(delta_content chunk)
-        Console->>Console: print(delta, end="", flush=True)
+    User->>Console: 輸入問題或技能編號
+    Console->>SDK: session.send_and_wait(prompt)
+    SDK->>LLM: 系統提示詞 + 使用者訊息 + 工具定義
+    
+    alt Demo 1: 庫存查詢
+        LLM->>Tool: 呼叫 fabric-inventory-query
+        Tool->>CSV: generate_inventory_report()
+        CSV-->>Tool: 真實 CSV 資料轉 Markdown 表格
+        Tool-->>LLM: textResultForLlm（即時資料）
+    else Demo 8: 會議預約
+        LLM->>MCP: 直接呼叫 WorkIQ MCP 工具
+        MCP-->>LLM: 真實 M365 行事曆資料
+    else Demo 2-7: 其他技能
+        LLM->>Tool: 呼叫技能工具（如 sharepoint-km-query）
+        Tool-->>LLM: textResultForLlm（靜態 SKILL.md 內容）
     end
-
-    Copilot->>Console: Event: SESSION_IDLE
-    Console->>Console: done.set() → 結束等待
-
-    Console-->>User: 顯示完整回應
+    
+    LLM-->>SDK: 以自然語言摘要回應
+    SDK-->>Console: 透過事件回呼串流 token
+    Console-->>User: 逐字顯示回應
 ```
 
-## � Demo 展示
+### 逐步說明
 
-> TODO: 提交前請在此新增 Demo 影片連結與擷取畫面。
+1. **啟動**：`console_app.py` 透過 `load_skills()` 載入技能，`build_tools()` 轉為 `copilot.Tool`，初始化 `CopilotClient`
+2. **工作階段**：SDK 工作階段建立，包含 GPT-4.1、7 個工具、系統提示詞、2 個即時 MCP 伺服器（GitHub + WorkIQ）
+3. **使用者輸入**：使用者輸入問題或選擇技能編號（1-8）
+4. **LLM 路由**：GPT-4.1 讀取系統提示詞（列出全部 8 個技能與 MCP 路由規則），決定呼叫哪個工具
+5. **工具執行**：選中工具的非同步 handler 執行：
+   - **Demo 1**：`generate_inventory_report()` 讀取 CSV → 回傳真實資料（Markdown）
+   - **Demo 8**：Handler 回傳重導訊息；LLM 直接呼叫 WorkIQ MCP 工具
+   - **其他**：Handler 回傳 `skill.response_content`（SKILL.md 靜態 Markdown）
+6. **回應**：LLM 解讀工具結果並生成自然語言摘要，串流至 Console
 
-## �📄 授權
+### 為何路由器是獨立模組
+
+`src/router.py` 提供獨立的關鍵字意圖分類器（使用者輸入 → Agent + 意圖 + 信心分數）。雖然**未在 `console_app.py` 中呼叫**（由 LLM 處理路由），它的用途為：
+- 展示意圖分類邏輯
+- 可測試元件（50 項測試案例）
+- 未來非 LLM 路由的基礎
+
+---
+
+## 🤖 GitHub Copilot 使用紀錄
+
+### 作為 AI 執行引擎
+
+- **GitHub Copilot SDK**（`CopilotClient`）管理工作階段、工具呼叫、MCP 整合、串流
+- 全部 8 個技能註冊為 SDK `Tool` 物件
+- SDK 處理對話迴圈、工具分派、回應彙整
+
+### 作為專業 Agent
+
+- **Demo 7** — LLM 根據對話上下文產生事件報告（使用靜態技能範本）
+- **Demo 8** — LLM 呼叫 WorkIQ MCP 查詢真實 M365 Calendar 資料並排程會議
+
+### 開發過程中的使用
+
+- **Copilot Chat** 用於設計 Agent 路由框架、除錯非同步串流模式、生成系統提示詞
+- **Copilot Agent Mode** 協助搭建 Foundry Agent 整合與 MCP client 設定
+- **行內建議** 加速編寫 YAML frontmatter 解析器與工具建構器
+
+---
+
+## 📎 參考：Foundry Agent（ref/）
+
+`ref/` 目錄包含展示 Azure AI Foundry Agent 整合的獨立腳本：
+
+| 腳本 | 說明 | 需要 |
+|------|------|------|
+| `00_env_check.py` | 驗證 Azure 憑證與連線 | Azure 憑證 |
+| `01_inventory_agent_sample.py` | 建立含嵌入庫存資料的 Foundry Agent | Azure AI Foundry 專案 |
+| `agent_utils.py` | Foundry 腳本共用工具函式 | Azure 憑證 |
+
+這些腳本**未整合**至 console app 流程中。展示從 Copilot SDK 技能到 Production Azure AI Foundry Agent 的演進路徑，使用 `azure-ai-projects` GA SDK。
+
+---
+
+## 📄 授權
 
 本專案為參加 Agents League TechConnect 黑客松的原創作品。
 
@@ -406,8 +447,7 @@ sequenceDiagram
 
 - [Agents League TechConnect](https://github.com/microsoft/agentsleague-techconnect)
 - [GitHub Copilot SDK](https://github.com/github/copilot-sdk)
-- [Azure AI Foundry](https://ai.azure.com) — Agent Service + Responses API
-- [azure-ai-projects SDK](https://pypi.org/project/azure-ai-projects/) — Foundry Agent Python SDK
+- [Azure AI Foundry](https://ai.azure.com)
 - [WorkIQ MCP](https://github.com/microsoft/work-iq-mcp)
 - [GitHub MCP Server](https://github.com/github/github-mcp-server)
 

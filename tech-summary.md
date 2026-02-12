@@ -8,174 +8,269 @@
 
 ### The Challenge
 
-Enterprises face complex cross-regional incidents that require coordinating across multiple systems, teams, and time zones. Traditional incident response involves:
+Enterprises face complex cross-regional incidents requiring coordination across multiple systems, teams, and time zones. Traditional incident response involves:
 
-- Manual switching between 6+ different tools (inventory, ticketing, knowledge base, monitoring, etc.)
+- Manual switching between 6+ tools (inventory, ticketing, knowledge base, monitoring, etc.)
 - Slow information gathering across regions with different access permissions
-- Lack of unified visibility into root cause analysis
+- Lack of unified root cause analysis visibility
 - Time-consuming report generation and follow-up coordination
 
 ### Our Solution
 
-**Zava Smart Assistant** — an AI agent that unifies the entire incident response workflow into a single conversational interface, powered by the GitHub Copilot SDK with MCP (Model Context Protocol) integrations.
+**Zava Smart Assistant** — an AI agent that unifies the entire incident response workflow into a single conversational interface, powered by the **GitHub Copilot SDK** with MCP (Model Context Protocol) integrations.
 
 ---
 
-## 2. Architecture Overview
+## 2. Core Technical Pattern: Copilot SDK Agent Skills
+
+> **This is the central mechanism of the entire application.**
+
+The system uses the Copilot SDK's **Agent Skills** feature to convert human-readable Markdown files into executable tools:
+
+```
+.github/skills/demo{1-8}-*/SKILL.md
+    → src/skills.py (YAML frontmatter parser)
+    → src/tools.py (converts to copilot.Tool objects)
+    → CopilotClient.create_session(tools=[...])
+    → GPT-4.1 decides which tool to call at runtime
+```
+
+### What Copilot SDK Provides
+
+| Capability | How We Use It |
+|------------|---------------|
+| `CopilotClient` session management | Single session with GPT-4.1 + tools + MCP servers |
+| `Tool` object registration | 7 tools built from SKILL.md files |
+| MCP server integration | 2 live HTTP MCP (GitHub + WorkIQ) registered in session |
+| Streaming event callbacks | Token-by-token response via `SessionEventType.ASSISTANT_MESSAGE_DELTA` |
+| Tool execution events | `TOOL_EXECUTION_START` / `TOOL_EXECUTION_COMPLETE` for logging |
+| LLM-driven routing | GPT-4.1 reads system prompt and decides tool selection (no manual router) |
+
+---
+
+## 3. Architecture Overview
 
 ### System Layers
 
 ```mermaid
 graph TD
     subgraph Interface["Interface Layer"]
-        CLI["Console CLI App<br/>(console_app.py)"]
-        CLI --> Router["Foundry Agent (Intent Router)<br/>src/router.py + src/agents.py"]
+        CLI["Console App<br/>(console_app.py)"]
     end
 
-    subgraph Agents["Agent Layer"]
-        Router --> Inv["Inventory Agent<br/>🔴 High"]
-        Router --> Know["Knowledge Agent<br/>🟡 Medium"]
-        Router --> Search["Search Agent<br/>🟢 Low"]
-        Router --> Log["Logistics Agent<br/>🔴 High"]
-        Router --> SRE["SRE Agent<br/>🔴 High"]
+    subgraph Engine["AI Engine (✅ Live)"]
+        SDK["Copilot SDK<br/>CopilotClient + GPT-4.1"]
     end
 
-    subgraph MCP["MCP Integration Layer"]
-        Inv --> FabricMCP["Fabric MCP"]
-        Know --> SPMCP["SharePoint MCP"]
-        Search --> BingMCP["Bing Search MCP"]
-        Log --> LogMCP["Logistics MCP"]
-        SRE --> AzMCP["Azure Monitor MCP"]
+    subgraph Pipeline["Agent Skills Pipeline (✅ Live)"]
+        SKILL["8 × SKILL.md"] --> Parse["skills.py"] --> Tools["7 × copilot.Tool"]
+        Tools --> SDK
     end
 
-    subgraph Data["Data Sources Layer"]
-        FabricMCP --> FL["Fabric Lakehouse"]
-        SPMCP --> SPKM["SharePoint KM"]
-        BingMCP --> Bing["Bing Search"]
-        LogMCP --> LDB["Logistics DB"]
-        AzMCP --> AzMon["Azure Monitor"]
+    subgraph LiveMCP["Live MCP (✅ Real)"]
+        GitHub["GitHub MCP"]
+        WorkIQ["WorkIQ MCP"]
     end
+
+    subgraph LiveData["Live Data (✅ Real)"]
+        CSV["Inventory CSV<br/>data/inventory/"]
+    end
+
+    subgraph Static["Static Responses (🔶 Simulated)"]
+        D2["Demo 2: SharePoint"]
+        D3["Demo 3: Bugfix"]
+        D4["Demo 4: Weather"]
+        D5["Demo 5: Logistics"]
+        D6["Demo 6: Health"]
+        D7["Demo 7: Report"]
+    end
+
+    CLI --> SDK
+    SDK --> GitHub & WorkIQ
+    SDK --> CSV
+    SDK --> D2 & D3 & D4 & D5 & D6 & D7
 ```
-
-Also includes GitHub Agents (Coding Agent + Copilot) operating alongside the Foundry-routed agents.
 
 ### Data Flow
 
 ```
 User Message
-    → Console captures input
-    → Foundry Agent classifies intent (src/router.py)
-    → Routes to specialized agent based on intent & permission
-    → Agent calls MCP connector for data source access
-    → Results aggregated and summarized in natural Chinese
-    → Streamed back token-by-token to UI
+    → console_app.py captures input
+    → CopilotClient.send_and_wait(prompt)
+    → GPT-4.1 selects tool(s) based on system prompt
+    → Tool handler executes:
+        ├── Demo 1: live CSV → Markdown inventory report
+        ├── Demo 8: redirect → WorkIQ MCP real call
+        └── Demo 2-7: SKILL.md static response
+    → LLM interprets and summarizes in natural language
+    → Response streamed token-by-token to console
 ```
 
 ---
 
-## 3. Core Design Decisions
+## 4. Real vs Simulated — Complete Breakdown
 
-### 3.1 Foundry Agent as Orchestrator
+### ✅ Live Components (Fully Functional at Runtime)
 
-**Why**: Instead of a flat single-agent architecture, we use Foundry Agent as the central orchestrator that routes intents to specialized agents.
+| Component | Implementation | File(s) |
+|-----------|----------------|---------|
+| Copilot SDK engine | `CopilotClient` session, streaming, tool calling | `console_app.py` |
+| Agent Skills pipeline | SKILL.md → parse → `copilot.Tool` | `src/skills.py`, `src/tools.py` |
+| System prompt & governance | Permission escalation, MCP routing rules | `src/prompts.py` |
+| GitHub MCP | HTTP MCP at `api.githubcopilot.com/mcp/` | `console_app.py` session config |
+| WorkIQ MCP | HTTP MCP at `workiq.microsoft.com/mcp/` | `console_app.py` session config |
+| Demo 1 inventory data | Real CSV files → Markdown report | `src/inventory_data.py`, `data/inventory/*.csv` |
+| Agent registry & permissions | 7 agents with permission model | `src/agents.py` |
+| Intent router | Keyword classification (standalone) | `src/router.py` |
+| Automated tests | 181 tests, 100% passing | `tests/` |
 
-- **Intent-based routing** — Foundry Agent classifies user input and dispatches to the right agent
-- **Permission isolation** — Each agent has explicit permission levels (🔴 High / 🟡 Medium / 🟢 Low)
-- **Audit trail** — Every routing decision is logged with confidence scores
-- **Elastic scaling** — New agents can be added without modifying existing ones
+### 🔶 Simulated Components (Pre-Authored Static Responses)
 
-**Implementation**:
+| Component | Actual Behavior | Why Simulated |
+|-----------|-----------------|---------------|
+| Fabric MCP | Reads local CSV, not real Fabric | No live Fabric Lakehouse in demo env |
+| SharePoint MCP | Returns SKILL.md text | No live SharePoint site |
+| Bing Search MCP | Returns SKILL.md text | Offline demo reliability |
+| Logistics MCP | Returns SKILL.md text | No live logistics DB |
+| Azure Monitor MCP | Returns SKILL.md text | No live Azure Monitor connected |
+| Demo 2-7 responses | SKILL.md pre-authored Markdown | MCP backends not available |
+| Custom agent switching | Shows info only, no session change | Feature placeholder |
+| Permission escalation | System prompt instructions only | No programmatic checks |
+| Playwright/Filesystem MCP | In config, not registered in session | Not needed for demo flow |
+
+### 🔶 Reference Only (Not Integrated)
+
+| Component | Description |
+|-----------|-------------|
+| `ref/01_inventory_agent_sample.py` | Standalone Foundry Agent via `azure-ai-projects` SDK |
+| `ref/00_env_check.py` | Azure credential/connection validator |
+| `ref/agent_utils.py` | Shared utilities for Foundry scripts |
+
+---
+
+## 5. Core Design Decisions
+
+### 5.1 Copilot SDK as the Sole Runtime
+
+**Why**: Rather than building a custom agent framework, we use the Copilot SDK as the unified AI runtime.
+
+- **Tool calling** — SDK handles LLM → tool dispatch → response aggregation
+- **MCP integration** — Live MCP servers registered directly in session config
+- **Streaming** — Built-in event callbacks for real-time response display
+- **System prompt** — Governs tool selection, permission rules, and response behavior
+
+**Implementation** (`console_app.py`):
 ```python
-from src.router import FoundryRouter
-
-router = FoundryRouter()
-agent, intent, confidence = router.route(user_input)
-# → (InventoryAgent, INVENTORY_QUERY, 0.85)
+client = CopilotClient()
+session = await client.create_session({
+    "model": "gpt-4.1",
+    "streaming": True,
+    "tools": tools,  # 7 copilot.Tool from SKILL.md
+    "system_message": {"content": SYSTEM_MESSAGE},
+    "mcp_servers": {
+        "workiq": {"type": "http", "url": "https://workiq.microsoft.com/mcp/", "tools": ["*"]},
+        "github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/", "tools": ["*"]},
+    },
+})
 ```
 
-### 3.2 Skill-as-Markdown Architecture
+### 5.2 Skill-as-Markdown Architecture
 
 **Why**: Skills are defined as `SKILL.md` files with YAML frontmatter, not hardcoded Python functions.
 
-**Benefits**:
-- **Non-developer editable** — Product managers can update skill responses without touching code
-- **Version controlled** — Each skill is a separate file, easy to diff and review
-- **Self-documenting** — The skill file IS the documentation
-- **Hot-swappable** — Add/remove skills by adding/removing files
-
-**Structure**:
-```yaml
----
-name: fabric-inventory-query
-description: 'Query inventory data from Fabric Lakehouse'
----
-## Trigger Conditions
-- keyword1
-- keyword2
-## Default Response
-<response content in Markdown>
+**Pipeline**:
+```
+.github/skills/demo1-fabric-inventory/SKILL.md
+    → skills.py: _parse_frontmatter() + _extract_triggers() + _extract_response()
+    → Skill dataclass (name, description, triggers, response_content, demo_id)
+    → tools.py: build_tools() → copilot.Tool(name, description, parameters, handler)
 ```
 
-### 3.3 MCP Integration with Graceful Degradation
+**Benefits**:
+- **Non-developer editable** — Product managers can update skill responses
+- **Version controlled** — Each skill is a separate file, easy to diff
+- **Self-documenting** — The skill file IS the documentation
+- **Hot-swappable** — Add/remove skills by adding/removing folders
 
-**Why**: MCP provides a standard protocol for connecting to external data sources, but live demos need reliability.
+### 5.3 LLM-Driven Routing (Not Code-Driven)
 
-**Design**:
-- MCP servers (GitHub, WorkIQ) are used when available
-- If MCP is unavailable, tools fall back to pre-authored responses
-- This dual-mode ensures the demo works offline while showcasing real MCP capability online
+**Why**: The system prompt tells GPT-4.1 which tools exist and when to use them. The LLM decides routing at runtime.
 
-### 3.4 Permission Escalation (Human-in-the-Loop)
+**Key insight**: `src/router.py` (keyword-based intent router) exists as a testable standalone module with 50 test cases, but is **NOT called** in `console_app.py`. The LLM handles all routing decisions based on the system prompt in `src/prompts.py`.
 
-**Why**: Demonstrates enterprise governance patterns — agents shouldn't have unrestricted access.
+### 5.4 MCP Dual-Mode + Live CSV Data
 
-**Flow**:
+**Why**: MCP provides standard protocol for external data, but live demos need reliability.
+
+**Three data tiers**:
+1. **Live MCP** (GitHub, WorkIQ) — Real HTTP endpoints in SDK session
+2. **Live CSV** (Demo 1) — `src/inventory_data.py` reads `data/inventory/*.csv` with anomaly detection
+3. **Static fallback** (Demo 2-7) — Pre-authored SKILL.md responses
+
+**Live CSV implementation** (`src/tools.py`):
+```python
+use_live_csv = skill.name == "fabric-inventory-query"
+if use_live_csv:
+    report = generate_inventory_report()  # reads CSV files
+    return {"textResultForLlm": report, "resultType": "success"}
+```
+
+### 5.5 Permission Escalation (Prompt-Driven Governance)
+
+**Why**: Demonstrates enterprise governance without code-level enforcement.
+
+**Flow** (entirely in system prompt):
 ```
 User requests cross-region data
-    → Agent refuses: "I only have regional access"
-    → Agent suggests: "Please ask your manager to approve temporary access"
-    → User confirms: "It's approved"
-    → Agent proceeds with full access
-    → Access is session-scoped (24h simulated)
+    → LLM refuses: "I only have regional access"
+    → LLM suggests: "Please ask your manager to approve temporary access"
+    → User confirms: "It's been granted"
+    → LLM proceeds with full access
+    → Access is session-scoped
 ```
 
-This is implemented entirely in the system prompt, not in code — showcasing how LLM behavioral constraints can enforce governance policies.
+---
+
+## 6. The 8 Skills — Detailed Breakdown
+
+| Phase | Skill | Tool Handler | MCP | Data Status |
+|-------|-------|-------------|-----|-------------|
+| **Diagnose** | 1. Inventory Query | ✅ `generate_inventory_report()` → live CSV | fabric-mcp 🔶 | ✅ Live |
+| | 2. Knowledge Base | 🔶 Static SKILL.md response | sharepoint-mcp 🔶 | 🔶 Static |
+| **Fix** | 3. Bug Fix Agent | 🔶 Static SKILL.md response | — | 🔶 Static |
+| **Verify** | 4. Weather Search | 🔶 Static SKILL.md response | bing-search-mcp 🔶 | 🔶 Static |
+| | 5. Logistics Tracking | 🔶 Static SKILL.md response | logistics-mcp 🔶 | 🔶 Static |
+| | 6. System Health | 🔶 Static SKILL.md response | azure-monitor-mcp 🔶 | 🔶 Static |
+| **Report** | 7. Incident Report | 🔶 Static SKILL.md response | — | 🔶 Static |
+| | 8. Meeting Booking | ✅ Redirect to live WorkIQ MCP | workiq-mcp ✅ | ✅ Live |
+
+> Skills 2-7 use `LIVE_MCP_SKILLS` dict — when real MCP servers come online, simply add entries to switch from static to live.
 
 ---
 
-## 4. The 8 Skills — Detailed Breakdown
+## 7. Technology Stack
 
-| Phase | Skill | Simulated Backend | MCP | Purpose |
-|-------|-------|-------------------|-----|---------|
-| **Diagnose** | 1. Inventory Query | Fabric Lakehouse | Fabric MCP | Identify which regions are affected |
-| | 2. Knowledge Base | SharePoint | SharePoint MCP | Find past incidents with similar patterns |
-| **Fix** | 3. Bug Fix Agent | GitHub Coding Agent | — | Auto-analyze and fix root cause code |
-| **Verify** | 4. Weather Search | Bing Search | Bing Search MCP | Check external factors (weather, logistics) |
-| | 5. Logistics Tracking | Logistics DB | Logistics MCP | Confirm shipment ETA |
-| | 6. System Health | Azure Monitor | Azure Monitor MCP | Verify fix effectiveness |
-| **Report** | 7. Incident Report | GitHub Copilot | — | Generate comprehensive incident report |
-| | 8. Meeting Booking | WorkIQ / M365 | WorkIQ MCP | Schedule follow-up meeting |
-
----
-
-## 5. Technology Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| AI Runtime | GitHub Copilot SDK | Session management, tool calling, streaming |
-| Orchestration | Foundry Agent | Intent routing, agent dispatch, permission checks |
-| Agent Framework | src/agents.py | Agent definitions, permission model |
-| Intent Router | src/router.py | Keyword-based intent classification |
-| LLM | GPT-4.1 | Intent understanding, response generation |
-| Console UI | Python asyncio | Terminal-based interface |
-| Skill Definition | YAML + Markdown | Declarative skill configuration |
-| MCP Client | GitHub MCP, WorkIQ MCP | External service integration |
-| Config | python-dotenv | Environment variable management |
-| Language | Python 3.11+ | Async/await, type hints |
+| Component | Technology | Live/Simulated |
+|-----------|------------|----------------|
+| AI Runtime | GitHub Copilot SDK (`CopilotClient`) | ✅ Live |
+| LLM | GPT-4.1 | ✅ Live |
+| Tool Pipeline | `src/skills.py` → `src/tools.py` → `copilot.Tool` | ✅ Live |
+| Live MCP | GitHub MCP + WorkIQ MCP (HTTP) | ✅ Live |
+| Inventory Data | `src/inventory_data.py` → CSV files | ✅ Live |
+| Agent Framework | `src/agents.py` (7 agents + permission model) | ✅ Metadata |
+| Intent Router | `src/router.py` (keyword-based) | ✅ Standalone |
+| System Prompt | `src/prompts.py` | ✅ Live |
+| Console UI | Python asyncio (`console_app.py`) | ✅ Live |
+| Skill Definition | YAML + Markdown (`.github/skills/`) | ✅ Live |
+| Static MCP | Fabric, SharePoint, Bing, Logistics, Azure Monitor | 🔶 Metadata labels |
+| Custom Agents | `config/agent.json` (3 agents) | 🔶 Display only |
+| Config | python-dotenv | ✅ Live |
+| Testing | pytest (181 tests) | ✅ Live |
+| Language | Python 3.11+ | ✅ |
 
 ---
 
-## 6. Key Differentiators
+## 8. Key Differentiators
 
 ### vs. Traditional Chatbot
 
@@ -183,9 +278,9 @@ This is implemented entirely in the system prompt, not in code — showcasing ho
 |--------|-------------------|------|
 | Tool Orchestration | Rules-based routing | LLM decides which tools to call |
 | Multi-tool Chains | One tool per turn | Multiple tools in a single turn |
-| Governance | Role-based access control | AI-enforced permission escalation |
+| Governance | Role-based access control | Prompt-driven permission escalation |
 | Skill Management | Code changes required | Edit Markdown files |
-| Data Sources | Direct API calls | MCP protocol abstraction |
+| Data Sources | Direct API calls | MCP protocol + SKILL.md fallback |
 
 ### vs. Raw LLM API
 
@@ -193,68 +288,82 @@ This is implemented entirely in the system prompt, not in code — showcasing ho
 |--------|---------|------|
 | Tool Calling | Manual implementation | Copilot SDK handles routing |
 | Streaming | Build your own | Built-in event callbacks |
+| MCP Integration | Not available | SDK-native MCP support |
 | Context Management | Token counting | Session-based |
 | Extensibility | API refactoring | Drop-in SKILL.md files |
 
 ---
 
-## 7. Innovation Highlights
+## 9. Innovation Highlights
 
-1. **Multi-Agent Permission Model** — 6 specialized agents classified by permission level (🔴 High / 🟡 Medium / 🟢 Low), enforcing least-privilege access across the agent ecosystem
+1. **Copilot SDK Agent Skills as Core Pattern** — The entire system is built around converting Markdown skill files into `copilot.Tool` objects, demonstrating the SDK's extensibility for enterprise scenarios
 
-2. **Foundry Agent Orchestration** — Centralized intent router that dispatches to specialized agents, demonstrating enterprise-grade agent coordination patterns
+2. **Multi-Agent Permission Model** — 7 agents classified by permission level (🔴 High / 🟡 Medium / 🟢 Low), enforcing least-privilege access patterns
 
-3. **Skill-as-Markdown** — A novel pattern where agent capabilities are defined in human-readable Markdown files, making the agent configuration accessible to non-developers
+3. **Skill-as-Markdown** — A novel pattern where agent capabilities are defined in human-readable Markdown files, making agent configuration accessible to non-developers
 
-4. **Prompt-Driven Governance** — Permission escalation is enforced purely through system prompt design, demonstrating that LLM behavioral constraints can implement real enterprise policies
+4. **Prompt-Driven Governance** — Permission escalation enforced purely through system prompt design, demonstrating LLM behavioral constraints for enterprise policies
 
-5. **MCP Dual-Mode** — Real MCP integration (6 connectors) with offline fallback, solving the live demo reliability challenge while preserving authentic MCP showcase
+5. **MCP Dual-Mode** — 2 live MCP servers (GitHub + WorkIQ) + 5 static labels with offline fallback, solving the live demo reliability challenge
 
-6. **Multi-Phase Incident Workflow** — The 8 skills are organized into 4 logical phases (Diagnose → Fix → Verify → Report), demonstrating how an AI agent can guide users through complex multi-step processes
+6. **Live CSV Data Pipeline** — Demo 1 reads real CSV inventory data with anomaly detection, showing the path from static skills to live data integration
+
+7. **Multi-Phase Incident Workflow** — 8 skills organized into 4 logical phases (Diagnose → Fix → Verify → Report), demonstrating AI-guided multi-step processes
+
+8. **Transparent Real/Simulated Labeling** — Every component is explicitly marked as live or simulated, demonstrating honest engineering practices for POC/demo projects
 
 ---
 
-## 8. Demo Scenario Walkthrough
+## 10. Demo Scenario Walkthrough
 
 ```
 Phase 1: DIAGNOSE (Skills 1-2)
 ├── "Check inventory across TW/JP/US"
 │   → Permission denied → Manager approval → Cross-region query
-│   → Result: TW/JP normal, US only 3 units left
+│   → ✅ Demo 1: Live CSV data from data/inventory/
+│   → Result: TW 3,270 / JP 700 normal, US only 3 boxes ⚠️ Critical
 ├── "Why does the website show out of stock?"
+│   → 🔶 Demo 2: Static SKILL.md response
 │   → Knowledge base finds past sync-delay incidents
 │
 Phase 2: FIX (Skill 3)
 ├── "Can you fix the bug?"
+│   → 🔶 Demo 3: Static SKILL.md response
 │   → GitHub Agent: API timeout 5s→30s, add retry, fix error handling
-│   → PR created, CI passed, MDC compliant
+│   → PR created, CI passed
 │
 Phase 3: VERIFY (Skills 4-6)
 ├── "Why is US inventory so low?"
+│   → 🔶 Demo 4: Static weather response
+│   → 🔶 Demo 5: Static logistics response
 │   → Weather: US East Coast blizzard → logistics delayed
 │   → Logistics: 300 units arriving this afternoon
 ├── "Make sure US sync is also fixed"
+│   → 🔶 Demo 6: Static health response
 │   → System health: all green, sync rate 87.3%→99.8%
 │
 Phase 4: REPORT (Skills 7-8)
 ├── "Generate incident report and schedule meeting"
-│   → Report auto-generated with full timeline
-│   → Meeting booked: 3:00 PM with Product Manager
+│   → 🔶 Demo 7: Static report template
+│   → ✅ Demo 8: Live WorkIQ MCP → real M365 calendar data
+│   → Report auto-generated, meeting booked: 3:00 PM
 │
 Resolution: Complete incident handled in one conversation
 ```
 
 ---
 
-## 9. Submission Compliance
+## 11. Submission Compliance
 
 | Requirement | Status |
 |-------------|--------|
 | GitHub Copilot usage documented | ✅ |
 | Creative application with unique concept | ✅ |
-| MCP integration (GitHub + WorkIQ) | ✅ |
+| MCP integration (GitHub + WorkIQ live) | ✅ |
 | No hardcoded credentials | ✅ |
 | No PII or confidential data | ✅ |
 | Public repository with README | ✅ |
+| Real vs simulated clearly labeled | ✅ |
+| Automated test suite (181 tests) | ✅ |
 | Demo materials included | ⏳ TODO |
 | Original work | ✅ |
