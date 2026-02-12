@@ -9,7 +9,9 @@ Features:
 """
 
 import asyncio
+import json
 import sys
+from pathlib import Path
 
 # ANSI color codes for terminal output
 COLOR_USER = "\033[1;36m"      # Bold Cyan
@@ -27,65 +29,27 @@ from src.agents import AGENT_REGISTRY
 
 
 # ============================================================================
-# Sample Custom Agents
+# Config directory
 # ============================================================================
-SAMPLE_AGENTS = [
-    {
-        "name": "R&D Assistant",
-        "description": "Specializes in code review, technical documentation, and architecture design",
-        "system_prompt": "You are a senior R&D engineer specializing in code review, writing technical documentation, and providing architecture design recommendations.",
-    },
-    {
-        "name": "Customer Support",
-        "description": "Handles customer issues, FAQ queries, and ticket tracking",
-        "system_prompt": "You are a professional customer service representative responsible for helping customers resolve issues, answering FAQs, and tracking ticket status. Please respond in a friendly and patient manner.",
-    },
-    {
-        "name": "Finance Analyst",
-        "description": "Financial report analysis, budget planning, and cost estimation",
-        "system_prompt": "You are a finance analyst specializing in analyzing financial reports, planning budgets, and performing cost estimation and ROI analysis. Please respond in a professional and clear manner.",
-    },
-]
+CONFIG_DIR = Path(__file__).parent / "config"
+
+
+def _load_json(filename: str):
+    """Load a JSON config file from the config/ directory."""
+    path = CONFIG_DIR / filename
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
 
 # ============================================================================
-# MCP Servers Configuration
+# Sample Custom Agents (loaded from config/agent.json)
 # ============================================================================
-MCP_SERVERS = {
-    "playwright": {
-        "name": "Playwright MCP",
-        "status": "✅ Available",
-        "description": "Browser automation - testing, screenshots, web scraping",
-        "repo": "github.com/microsoft/playwright-mcp",
-        "type": "local",
-        "command": "npx",
-        "args": ["-y", "@anthropic/playwright-mcp"],
-    },
-    "filesystem": {
-        "name": "Filesystem MCP",
-        "status": "✅ Available",
-        "description": "Local filesystem access",
-        "repo": "modelcontextprotocol/server-filesystem",
-        "type": "local",
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
-    },
-    "github": {
-        "name": "GitHub MCP",
-        "status": "✅ Available", 
-        "description": "GitHub API integration - Issues, PRs, repo management",
-        "repo": "github.com/github/github-mcp-server",
-        "type": "http",
-        "url": "https://api.githubcopilot.com/mcp/",
-    },
-    "workiq": {
-        "name": "WorkIQ MCP",
-        "status": "✅ Available",
-        "description": "WorkIQ meeting integration - M365 calendar queries and scheduling",
-        "repo": "github.com/microsoft/work-iq-mcp",
-        "type": "http",
-        "url": "https://workiq.microsoft.com/mcp/",
-    },
-}
+SAMPLE_AGENTS: list[dict] = _load_json("agent.json")
+
+# ============================================================================
+# MCP Servers Configuration (loaded from config/mcp_server.json)
+# ============================================================================
+MCP_SERVERS: dict[str, dict] = _load_json("mcp_server.json")
 
 
 def print_skills_menu(skills):

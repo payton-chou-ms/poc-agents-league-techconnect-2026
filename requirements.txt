@@ -1,4 +1,16 @@
+# Copilot SDK
 github-copilot-sdk
 pydantic
 pyyaml
 python-dotenv
+
+# Azure AI Foundry Agent SDK
+azure-ai-projects
+azure-identity
+openai
+pyodbc
+
+# Agent Framework (for multi-agent workflow)
+agent-framework
+agent-framework-azure-ai
+agent-framework-devui

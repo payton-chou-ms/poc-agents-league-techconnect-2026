@@ -4,6 +4,7 @@ from copilot import Tool
 
 from src.skills import Skill
 from src.agents import AGENT_REGISTRY
+from src.inventory_data import generate_inventory_report
 
 
 def _find_agent_for_skill(skill: Skill):
@@ -35,6 +36,7 @@ def _make_handler(skill: Skill):
 
     agent_name, mcp_connector = _find_agent_for_skill(skill)
     use_live_mcp = skill.name in LIVE_MCP_SKILLS
+    use_live_csv = skill.name == "fabric-inventory-query"
 
     async def handler(invocation):
         # === Logging: Skill / Agent / MCP ===
@@ -50,6 +52,8 @@ def _make_handler(skill: Skill):
             print(f"🔌 [MCP]   {mcp_connector}{live_tag}")
         else:
             print(f"🔌 [MCP]   (none / direct)")
+        if use_live_csv:
+            print(f"📂 [DATA]  Live CSV from data/inventory/")
         print(f"{'─' * 50}")
 
         if use_live_mcp:
@@ -65,6 +69,19 @@ def _make_handler(skill: Skill):
                 "resultType": "success",
                 "sessionLog": f"Skill '{skill.name}' → live MCP '{session_key}'",
             }
+
+        # Live CSV data for inventory skill
+        if use_live_csv:
+            try:
+                report = generate_inventory_report()
+                return {
+                    "textResultForLlm": report,
+                    "resultType": "success",
+                    "sessionLog": f"Skill '{skill.name}' → live CSV data from data/inventory/",
+                }
+            except Exception as e:
+                print(f"   ⚠️ [CSV ERROR] {e} — falling back to static response")
+                # Fall through to static response below
 
         return {
             "textResultForLlm": skill.response_content,

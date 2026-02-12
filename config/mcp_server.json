@@ -1,0 +1,36 @@
+{
+  "playwright": {
+    "name": "Playwright MCP",
+    "status": "✅ Available",
+    "description": "Browser automation - testing, screenshots, web scraping",
+    "repo": "github.com/microsoft/playwright-mcp",
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "@anthropic/playwright-mcp"]
+  },
+  "filesystem": {
+    "name": "Filesystem MCP",
+    "status": "✅ Available",
+    "description": "Local filesystem access",
+    "repo": "modelcontextprotocol/server-filesystem",
+    "type": "local",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  },
+  "github": {
+    "name": "GitHub MCP",
+    "status": "✅ Available",
+    "description": "GitHub API integration - Issues, PRs, repo management",
+    "repo": "github.com/github/github-mcp-server",
+    "type": "http",
+    "url": "https://api.githubcopilot.com/mcp/"
+  },
+  "workiq": {
+    "name": "WorkIQ MCP",
+    "status": "✅ Available",
+    "description": "WorkIQ meeting integration - M365 calendar queries and scheduling",
+    "repo": "github.com/microsoft/work-iq-mcp",
+    "type": "http",
+    "url": "https://workiq.microsoft.com/mcp/"
+  }
+}

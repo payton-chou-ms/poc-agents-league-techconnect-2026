@@ -343,6 +343,57 @@ agents-league-techconnect-2026/
 
 > **備註**：Console App 另支援 `/agent` 指令切換至自訂 Agent（R&D / Customer Support / Finance），各有獨立系統提示詞。
 
+### 使用者輸入技能編號的完整流程（以輸入 `1` 為例）
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Console as console_app.py
+    participant Skills as src/skills.py<br/>load_skills()
+    participant Agents as src/agents.py<br/>AGENT_REGISTRY
+    participant Copilot as CopilotClient<br/>(GitHub Copilot SDK)
+    participant MCP as MCP Server<br/>(e.g. fabric-mcp)
+
+    Note over User,Console: 使用者輸入 "1" 並按下 Enter
+
+    Console->>Console: user_input.isdigit() → True, num=1
+    Console->>Console: get_skill_prompt_by_number(skills, 1)
+
+    Note over Console,Skills: skills 已在啟動時從<br/>.github/skills/demo1-fabric-inventory/SKILL.md 載入
+
+    Console->>Console: skill = skills[0]<br/>(fabric-inventory-query, demo_id=1)
+
+    Console->>Agents: 遍歷 AGENT_REGISTRY:<br/>尋找 1 in agent.demo_ids 的 Agent
+    Agents-->>Console: ✅ Inventory Agent<br/>(category=DATA, permission=HIGH, mcp=fabric-mcp)
+
+    Note over Console: 📋 Log 輸出至終端機:<br/>[SKILL] fabric-inventory-query<br/>[AGENT] Inventory Agent (data)<br/>[PERMISSION] 🔴 high<br/>[MCP] fabric-mcp
+
+    Console->>Console: prompt = skill.triggers[0]<br/>= "Check inventory"
+
+    Console->>Copilot: session.send_and_wait(<br/>{"prompt": "Check inventory"})
+
+    Note over Copilot: Copilot SDK 處理 prompt<br/>（含 system_message + tools）
+
+    Copilot->>Console: Event: TOOL_EXECUTION_START<br/>(tool_name 或 mcp_server)
+    Console->>Console: 顯示 "🛠️ [TOOL CALL] ..."
+
+    Copilot->>MCP: 呼叫 MCP tool
+    MCP-->>Copilot: 回傳工具結果
+
+    Copilot->>Console: Event: TOOL_EXECUTION_COMPLETE
+    Console->>Console: 顯示 "✅ [MCP DONE] ..."
+
+    loop 串流回應 tokens
+        Copilot->>Console: Event: ASSISTANT_MESSAGE_DELTA<br/>(delta_content chunk)
+        Console->>Console: print(delta, end="", flush=True)
+    end
+
+    Copilot->>Console: Event: SESSION_IDLE
+    Console->>Console: done.set() → 結束等待
+
+    Console-->>User: 顯示完整回應
+```
+
 ## � Demo 展示
 
 > TODO: 提交前請在此新增 Demo 影片連結與擷取畫面。
