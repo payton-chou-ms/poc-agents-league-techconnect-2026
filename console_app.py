@@ -180,6 +180,12 @@ async def run_console():
                 req.add_header('User-Agent', 'ZavaHealthCheck/1.0')
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     status_icon = f"✅ Reachable ({resp.status})"
+            except urllib.error.HTTPError as e:
+                # 401/403 means server is reachable but requires auth — expected
+                if e.code in (401, 403):
+                    status_icon = f"✅ Reachable ({e.code} — auth required at runtime)"
+                else:
+                    status_icon = f"⚠️  HTTP {e.code}"
             except Exception as e:
                 err_msg = str(e)[:40]
                 status_icon = f"⚠️  Unreachable ({err_msg})"
