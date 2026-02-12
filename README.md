@@ -47,6 +47,8 @@ The system leverages the **Copilot SDK's Agent Skills** mechanism — converting
 
 ▶️ [**Watch the full demo walkthrough**](https://1drv.ms/v/c/997cab12c6465ec0/IQD-iC5-1n-0RLDMqW4hBzl8ARe247dwd3hBFbPYWpUtj7k?e=f79DkO)
 
+📄 [**Presentation Deck (PDF)**](doc/Zava_Unified_Enterprise_Agents.pdf)
+
 ---
 
 ## ✨ Demo Phases & Technology Overview
