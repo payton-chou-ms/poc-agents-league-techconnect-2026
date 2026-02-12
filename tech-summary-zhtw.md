@@ -294,23 +294,49 @@ if use_live_csv:
 
 ---
 
-## 9. 創新亮點
+## 9. 技術亮點
 
-1. **Copilot SDK Agent Skills 作為核心模式** — 整個系統圍繞「Markdown 技能檔案轉換為 `copilot.Tool` 物件」建構，展示 SDK 在企業情境中的可擴展性
+> 整個 Agent 能力系統完全由 Markdown 檔案驅動 — 產品經理可以新增或修改技能，完全無需碰 Python 程式碼。Copilot SDK Agent Skills 管線（`SKILL.md → YAML 解析器 → copilot.Tool`）是核心創新，由 GPT-4.1 透過系統提示詞治理處理所有路由決策，包含跨區域資料存取的 human-in-the-loop 權限升級模式。
 
-2. **多 Agent 權限模型** — 7 個專業 Agent 依權限等級分類（🔴 高 / 🟡 中 / 🟢 低），在 Agent 生態系中落實最小權限原則
+### Copilot SDK 作為通用介面
+- 使用 **GitHub Copilot SDK** 作為統一對話介面
+- 可嵌入**任何 UI** — Console、Web、Teams、或自訂前端 — 底層共用同一套 Agent 管線
+- 所有工具呼叫、串流、MCP 整合皆由 SDK Session 層處理
 
-3. **技能即 Markdown（Skill-as-Markdown）** — 創新模式，Agent 能力以人類可讀的 Markdown 檔案定義，讓非開發者也能參與 Agent 設定
+### Markdown 驅動的 Agent Skills（動態匯入）
+- Agent 能力完全以 **Markdown 檔案**（`SKILL.md`）定義，非 Python 程式碼
+- 技能於啟動時透過 Agent Skills 管線**動態匯入**：`SKILL.md → YAML 解析器 → copilot.Tool`
+- 產品經理與非開發人員可透過編輯 Markdown 新增或修改技能 — **零程式碼變更**
 
-4. **提示詞驅動治理（Prompt-Driven Governance）** — 權限升級完全透過系統提示詞設計實現，展示 LLM 行為約束可落實真實企業政策
+### 統一整合：Custom Agent + MCP + WorkIQ
+- 在單一 Session 中協調 **7 個專業 Agent**、**3 個可切換自訂 Agent**、**9 個 MCP 連接器**
+- **MCP 協議**提供標準化連接：GitHub、WorkIQ（M365）、Fabric、SharePoint、Bing 等
+- **WorkIQ MCP** 支援即時 M365 行事曆查詢與會議排程，直接從 Agent 對話中操作
 
-5. **MCP 雙模式** — 2 個即時 MCP 伺服器（GitHub + WorkIQ）+ 5 個靜態標籤含離線降級，解決現場 Demo 穩定性挑戰
+### Microsoft Foundry Agent — 企業級後端
+- 後端透過 `azure-ai-projects` SDK 連接 **Microsoft Foundry Agent**，實現生產等級部署
+- 運用 Microsoft 平台能力進行**身份驗證**、**稽核管理**、**合規記錄**、**身份治理**
+- 展示從 Copilot SDK POC → 生產環境 Foundry Agent 的演進路徑，含企業級控管
 
-6. **即時 CSV 資料管線** — Demo 1 讀取真實 CSV 庫存資料含異常偵測，展示從靜態技能到即時資料整合的路徑
+### Microsoft Fabric — 中央資料平台
+- 後端資料層透過 **Microsoft Fabric** 統一管理 Data Lakehouse 存取
+- 庫存、客訴、營運資料皆透過 Fabric 的中央資料治理流通
+- 確保所有 Agent 與區域具備一致的資料存取政策
 
-7. **多階段事件工作流程** — 8 個技能組織為 4 個邏輯階段（診斷 → 修復 → 驗證 → 報告），展示 AI Agent 如何引導使用者完成複雜多步驟流程
+### GitHub 整合 — 委派 Coding Agent
+- **GitHub MCP**（即時）提供與 GitHub Repository、Issue、Pull Request 的直接整合
+- 支援**委派 Coding Agent** 工作流程 — AI Agent 可建立 PR、審查程式碼、觸發 CI/CD
+- 與 GitHub Copilot 生態系無縫整合，提供端到端開發者體驗
 
-8. **透明的即時/模擬標示** — 每個元件明確標示為即時或模擬，展示 POC/Demo 專案的誠實工程實踐
+### 權限與存取控制 — Foundry + 中央資料平台
+- 權限管理透過 **Microsoft Foundry** 與**中央資料平台**統一管控
+- 多層級 Agent 權限（🔴 高 / 🟡 中 / 🟢 低），搭配 **human-in-the-loop** 跨區域資料存取升級
+- **提示詞驅動治理**確保 LLM 遵循企業政策 — 存取跨區域資料前須取得主管核准
+
+### 其他亮點
+- **MCP 雙模式** — 2 個即時 MCP 伺服器 + 5 個靜態標籤含離線降級，解決現場 Demo 穩定性
+- **多階段事件工作流程** — 8 個技能組織為 4 個邏輯階段（診斷 → 修復 → 驗證 → 報告）
+- **透明的即時/模擬標示** — 每個元件明確標示為即時或模擬
 
 ---
 

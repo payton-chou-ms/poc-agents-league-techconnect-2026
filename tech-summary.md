@@ -294,23 +294,49 @@ User requests cross-region data
 
 ---
 
-## 9. Innovation Highlights
+## 9. Technical Highlights
 
-1. **Copilot SDK Agent Skills as Core Pattern** — The entire system is built around converting Markdown skill files into `copilot.Tool` objects, demonstrating the SDK's extensibility for enterprise scenarios
+> The entire agent capability system is driven by Markdown files — product managers can add or modify skills without touching Python code. The Copilot SDK Agent Skills pipeline (`SKILL.md → YAML parser → copilot.Tool`) is the core innovation, with GPT-4.1 handling all routing decisions purely through system prompt governance, including a human-in-the-loop permission escalation pattern for cross-regional data access.
 
-2. **Multi-Agent Permission Model** — 7 agents classified by permission level (🔴 High / 🟡 Medium / 🟢 Low), enforcing least-privilege access patterns
+### Copilot SDK as Universal Interface
+- Uses **GitHub Copilot SDK** as the unified conversational interface
+- Embeddable into **any UI** — console, web, Teams, or custom frontends — with the same agent pipeline underneath
+- All tool calling, streaming, and MCP integration handled by the SDK session layer
 
-3. **Skill-as-Markdown** — A novel pattern where agent capabilities are defined in human-readable Markdown files, making agent configuration accessible to non-developers
+### Markdown-Driven Agent Skills (Dynamic Import)
+- Agent capabilities are defined entirely in **Markdown files** (`SKILL.md`), not Python code
+- Skills are **dynamically imported** at startup via the Agent Skills pipeline: `SKILL.md → YAML parser → copilot.Tool`
+- Product managers and non-developers can add or modify skills by editing Markdown — **zero code changes required**
 
-4. **Prompt-Driven Governance** — Permission escalation enforced purely through system prompt design, demonstrating LLM behavioral constraints for enterprise policies
+### Unified Integration: Custom Agents + MCP + WorkIQ
+- Orchestrates **7 specialized agents**, **3 switchable custom agents**, and **9 MCP connectors** under one session
+- **MCP protocol** provides standardized connectivity to GitHub, WorkIQ (M365), Fabric, SharePoint, Bing, and more
+- **WorkIQ MCP** enables real-time M365 calendar queries and meeting scheduling directly from the agent conversation
 
-5. **MCP Dual-Mode** — 2 live MCP servers (GitHub + WorkIQ) + 5 static labels with offline fallback, solving the live demo reliability challenge
+### Microsoft Foundry Agent — Enterprise-Grade Backend
+- Backend connects to **Microsoft Foundry Agent** via `azure-ai-projects` SDK for production-grade deployment
+- Leverages Microsoft platform capabilities for **authentication**, **audit management**, **compliance logging**, and **identity governance**
+- Demonstrates the path from Copilot SDK POC → production Foundry Agent with enterprise controls
 
-6. **Live CSV Data Pipeline** — Demo 1 reads real CSV inventory data with anomaly detection, showing the path from static skills to live data integration
+### Microsoft Fabric — Central Data Platform
+- Backend data layer managed through **Microsoft Fabric** for unified data lakehouse access
+- Inventory, customer complaints, and operational data flow through Fabric's centralized data governance
+- Enables consistent data access policies across all agents and regions
 
-7. **Multi-Phase Incident Workflow** — 8 skills organized into 4 logical phases (Diagnose → Fix → Verify → Report), demonstrating AI-guided multi-step processes
+### GitHub Integration — Delegated Coding Agent
+- **GitHub MCP** (live) provides direct integration with GitHub repositories, issues, and pull requests
+- Supports **delegated coding agent** workflows — the AI agent can create PRs, review code, and trigger CI/CD
+- Seamless integration with GitHub Copilot ecosystem for end-to-end developer experience
 
-8. **Transparent Real/Simulated Labeling** — Every component is explicitly marked as live or simulated, demonstrating honest engineering practices for POC/demo projects
+### Permission & Access Control — Foundry + Central Data Platform
+- Permission management unified through **Microsoft Foundry** and the **central data platform**
+- Multi-level agent permissions (🔴 High / 🟡 Medium / 🟢 Low) with **human-in-the-loop** escalation for cross-regional data access
+- **Prompt-driven governance** ensures LLM adheres to enterprise policies — manager approval required before accessing cross-region data
+
+### Additional Highlights
+- **MCP Dual-Mode** — 2 live MCP servers + 5 static labels with offline fallback, solving live demo reliability
+- **Multi-Phase Incident Workflow** — 8 skills organized into 4 logical phases (Diagnose → Fix → Verify → Report)
+- **Transparent Real/Simulated Labeling** — every component explicitly marked as live or simulated
 
 ---
 
