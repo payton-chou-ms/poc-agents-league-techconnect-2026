@@ -41,6 +41,12 @@ Zava 是一款基於 **GitHub Copilot SDK** 打造的企業級事件回應 AI �
 
 ---
 
+## 🎬 Demo 影片
+
+▶️ [**觀看完整 Demo 演示**](https://1drv.ms/v/c/997cab12c6465ec0/IQD-iC5-1n-0RLDMqW4hBzl8ARe247dwd3hBFbPYWpUtj7k?e=f79DkO)
+
+---
+
 ## ✨ Demo 階段與技術總覽
 
 | 階段 | Demo | Agent / Tool | MCP | 資料來源 | 狀態 |
